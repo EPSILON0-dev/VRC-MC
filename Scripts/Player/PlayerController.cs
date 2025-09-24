@@ -106,7 +106,7 @@ public class PlayerController : UdonSharpBehaviour
 
             if (Input.GetMouseButtonDown(1))
             {
-                PlaceBlockNetworked(hitPos + normal, 3);
+                PlaceBlockNetworked(hitPos + normal, 7);
                 performedAction = true;
             }
         }

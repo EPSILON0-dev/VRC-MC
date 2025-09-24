@@ -61,8 +61,8 @@ public class ChunkRendererSubchunk : UdonSharpBehaviour
     {
         if (_meshRenderer == null) return;
         MaterialPropertyBlock block = new MaterialPropertyBlock();
-        block.SetTexture("_BlockTex", ParentRenderer.Chunk.ChunkBlockTexture);
-        block.SetFloat("_Index", IndexInParent);
+        block.SetTexture("_BlockPlacementTex", ParentRenderer.Chunk.ChunkBlockTexture);
+        block.SetFloat("_IndexInParent", IndexInParent);
         _meshRenderer.SetPropertyBlock(block);
     }
 

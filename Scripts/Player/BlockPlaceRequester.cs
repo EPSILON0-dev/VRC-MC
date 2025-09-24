@@ -31,7 +31,6 @@ public class BlockPlaceRequester : UdonSharpBehaviour
         }
 
         // Send the request over the network
-        Debug.Log($"[REQUESTER : {gameObject.name}] Requesting block place at {position} with type {type}"); 
         _blockPlacePosX = position.x;
         _blockPlacePosY = position.y;
         _blockPlacePosZ = position.z;

@@ -134,13 +134,10 @@ public class WorldChunk : UdonSharpBehaviour
             int index = chunkIndex * SubchunkBlockCount + blockIndex;
             int x = index % TextureSize;
             int y = index / TextureSize;
-            if (block == 0)
+            // Don't set air blocks in the texture to avoid flickering
+            if (block != 0)
             {
-                ChunkBlockTexture.SetPixel(x, y, new Color32(0, 0, 0, 0));
-            }
-            else
-            {
-                var color = new Color32((byte)(block * 64), 0, 0, 0);
+                var color = new Color32((byte)block, 0, 0, 0);
                 ChunkBlockTexture.SetPixel(x, y, color);
             }
             ChunkBlockTexture.Apply();
@@ -200,7 +197,7 @@ public class WorldChunk : UdonSharpBehaviour
             {
                 // Only 16 for now
                 colors[i] = new Color32(
-                    (byte)(Blocks[index][i] * 16),
+                    (byte)(Blocks[index][i] & 0xFF),
                     0, 0, 0
                 );
             }

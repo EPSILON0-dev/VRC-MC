@@ -6,6 +6,9 @@ using VRC.Udon;
 
 public class BlockRegistryUdon : UdonSharpBehaviour
 {
+    public string[] BlockNames;
+    public int[] BlockIDs;
+
     void Start()
     {
         

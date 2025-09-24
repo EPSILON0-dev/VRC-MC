@@ -24,7 +24,11 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _AtlasTex:
-        m_Texture: {fileID: 2800000, guid: 44d4322ff6fc8fc46b0ffbbbc07c0050, type: 3}
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BlockAtlasTex:
+        m_Texture: {fileID: 18700000, guid: b90e673520f53bc4fa0a128051a87c4b, type: 2}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BlockTex:
@@ -67,6 +71,10 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _SideMappingTex:
+        m_Texture: {fileID: 2800000, guid: e4160c403cc0b894ea129dcc7fa80452, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
     - _BumpScale: 1
@@ -77,6 +85,7 @@ Material:
     - _Glossiness: 0
     - _GlossyReflections: 1
     - _Index: 0
+    - _IndexInParent: 0
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1

@@ -9,12 +9,13 @@
     * `[ ]` Combined chunk renderers
 * `[ ]` Networking implementation
     * `[x]` Chunk modified field
+    * `[x]` Setblock networking
     * `[ ]` Modified chunk/subchunk tracking
     * `[ ]` Sync pause
-* `[ ]` Block registry
+* `[x]` Block registry
 * `[ ]` World Generation
-* `[ ]` Atlas generator
-* `[ ]` Per face block textures
+* `[x]` Atlas generator
+* `[x]` Per face block textures
 * `[ ]` Basic interface
 * `[ ]` Load screen/area
 * `[ ]` VR Controls

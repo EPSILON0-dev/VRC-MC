@@ -27,7 +27,7 @@ public class WorldManager : UdonSharpBehaviour
     // Chunk rendering and updates
     private Vector2Int _currentCenterChunk;
     private double _lastRendererShift;
-    // Queue is newest first, organized as [chunkIndex, submeshIndex, ...]
+    // Queue is newest first, organized as (chunkIndex, submeshIndex)
     private Vector2Int[] _generateQueue;
     private int[] _rendererBindings;
 
