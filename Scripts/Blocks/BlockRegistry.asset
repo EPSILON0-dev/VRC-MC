@@ -1,0 +1,88 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37f201ea08353dc4a80109c732214b93, type: 3}
+  m_Name: BlockRegistry
+  m_EditorClassIdentifier: 
+  Blocks:
+  - BlockName: Bedrock
+    ID: 1
+    Textures:
+    - {fileID: 2800000, guid: 200cf4040a6f4aa4e82954c7f303815c, type: 3}
+    HasMultipleTextures: 0
+    IsNotFull: 0
+    IsGlass: 0
+  - BlockName: Stone
+    ID: 2
+    Textures:
+    - {fileID: 2800000, guid: 9adbcecdbbfc4c648988a9a654dc6cfc, type: 3}
+    HasMultipleTextures: 0
+    IsNotFull: 0
+    IsGlass: 0
+  - BlockName: Cobblestone
+    ID: 3
+    Textures:
+    - {fileID: 2800000, guid: 6f84dc1175af4514c8f360234075c33e, type: 3}
+    HasMultipleTextures: 0
+    IsNotFull: 0
+    IsGlass: 0
+  - BlockName: Sand
+    ID: 4
+    Textures:
+    - {fileID: 2800000, guid: 988a0bc4ad7635947a031d0b8575f99c, type: 3}
+    HasMultipleTextures: 0
+    IsNotFull: 0
+    IsGlass: 0
+  - BlockName: Dirt
+    ID: 5
+    Textures:
+    - {fileID: 2800000, guid: abc6db589090dc5499a0c1ab2c3c1221, type: 3}
+    HasMultipleTextures: 0
+    IsNotFull: 0
+    IsGlass: 0
+  - BlockName: Grass
+    ID: 6
+    Textures:
+    - {fileID: 2800000, guid: fda1ced66aead174e93aa82cf37afd8c, type: 3}
+    - {fileID: 2800000, guid: fda1ced66aead174e93aa82cf37afd8c, type: 3}
+    - {fileID: 2800000, guid: fda1ced66aead174e93aa82cf37afd8c, type: 3}
+    - {fileID: 2800000, guid: fda1ced66aead174e93aa82cf37afd8c, type: 3}
+    - {fileID: 2800000, guid: fe89f2ea3cf13a7408181fb47fb9b63f, type: 3}
+    - {fileID: 2800000, guid: abc6db589090dc5499a0c1ab2c3c1221, type: 3}
+    HasMultipleTextures: 1
+    IsNotFull: 0
+    IsGlass: 0
+  - BlockName: Oak Log
+    ID: 7
+    Textures:
+    - {fileID: 2800000, guid: 8d8d92784ee0d814fa99064c851d205a, type: 3}
+    - {fileID: 2800000, guid: 8d8d92784ee0d814fa99064c851d205a, type: 3}
+    - {fileID: 2800000, guid: 8d8d92784ee0d814fa99064c851d205a, type: 3}
+    - {fileID: 2800000, guid: 8d8d92784ee0d814fa99064c851d205a, type: 3}
+    - {fileID: 2800000, guid: f7b01683a7270f343aa00a177f36140e, type: 3}
+    - {fileID: 2800000, guid: f7b01683a7270f343aa00a177f36140e, type: 3}
+    HasMultipleTextures: 1
+    IsNotFull: 0
+    IsGlass: 0
+  - BlockName: Oak Leaves
+    ID: 8
+    Textures:
+    - {fileID: 2800000, guid: 5b785850b9dbd754b86cac9aa0cd810b, type: 3}
+    HasMultipleTextures: 0
+    IsNotFull: 1
+    IsGlass: 0
+  - BlockName: Oak Planks
+    ID: 9
+    Textures:
+    - {fileID: 2800000, guid: 8e959a87ae52e6143a8f563ee039ecb9, type: 3}
+    HasMultipleTextures: 0
+    IsNotFull: 0
+    IsGlass: 0
