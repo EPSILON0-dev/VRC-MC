@@ -9,7 +9,6 @@ public class WorldChunkEditor : Editor
 {
     public override void OnInspectorGUI()
     {
-        // TODO
         // Default for now
         UdonSharpGUI.DrawDefaultUdonSharpBehaviourHeader(target, false, false);
         DrawDefaultInspector();

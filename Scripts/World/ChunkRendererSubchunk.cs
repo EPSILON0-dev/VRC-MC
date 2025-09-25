@@ -90,6 +90,7 @@ public class ChunkRendererSubchunk : UdonSharpBehaviour
         if (blocks == null)
         {
             _meshFilter.mesh = new Mesh();
+            DisableMeshRenderer();
             if (!Manager.DisableAllLogs)
             {
                 Debug.Log(
@@ -217,6 +218,7 @@ public class ChunkRendererSubchunk : UdonSharpBehaviour
         mesh.RecalculateBounds();
         mesh.RecalculateNormals();
         _meshFilter.mesh = mesh;
+        EnableMeshRenderer();
 
         double timeEnd = Time.realtimeSinceStartupAsDouble;
 

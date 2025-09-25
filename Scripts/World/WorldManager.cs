@@ -2,22 +2,30 @@
 using UdonSharp;
 using UnityEngine;
 
-
 [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
 public class WorldManager : UdonSharpBehaviour
 {
     // References assigned in the editor
+    [Header("User Settable References")]
     public PlayerController Player;
+    public Material ChunkMaterial;
+    [Header("Auto Assigned References [DO NOT TOUCH]")]
     public WorldChunk[] WorldChunks;
     public ChunkRenderer[] ChunkRenderers;
-    public Material ChunkMaterial;
+    [Header("World Size Settings")]
     public int WorldSizeInChunks = 4;
     public int WorldOffsetInBlocks = -32;
+    [Header("Mesh Generator Settings")]
     public int RenderRegionSizeInChunks = 1;
     public int MeshGenerationsPerFrame = 1;
     public double TimeBetweenChunkShifts = 2f;
+    [Header("Terrain Generator Settings")]
     public Vector2Int GeneratorOffset = Vector2Int.zero;
     public float GeneratorTreesPerChunk = 1.5f;
+    public int GeneratorTimesliceDivision = 16;
+    public int GeneratorTextureTimesliceDivision = 4;
+    public int GeneratorMaxTreesPerFrame = 16;
+    [Header("Debug Settings")]
     public bool DisableSpamLogs = false;
     public bool DisableAllLogs = false;
 
@@ -39,6 +47,10 @@ public class WorldManager : UdonSharpBehaviour
     public Vector2[] PrecomputedUVs => _precomputedUVs;
     public int[] PrecomputedIndices => _precomputedIndices;
 
+    // Tree generator state
+    public int _treesToGenerate = 0;
+    public int _treesLeftToGenerate = 0;
+
     // ----------------------------------------------------------------------
 
     void Start()
@@ -54,6 +66,9 @@ public class WorldManager : UdonSharpBehaviour
     public void Init()
     {
         double timeStart = Time.realtimeSinceStartupAsDouble;
+
+        _treesToGenerate = (int)(GeneratorTreesPerChunk * WorldSizeInChunks * WorldSizeInChunks);
+        _treesLeftToGenerate = _treesToGenerate;
 
         PrecomputeArrays();
         _generateQueue = new Vector2Int[0];
@@ -143,15 +158,17 @@ public class WorldManager : UdonSharpBehaviour
         int chunkIndex = GetWorldChunkIndex(globalPosition, skipOffsetAdjust);
         if (chunkIndex < 0 || chunkIndex >= WorldChunks.Length)
         {
-            Debug.LogWarning(
-                $"WORLD MANAGER : Attempted to set block out of bounds at {globalPosition}"
-            );
+            if (log)
+            {
+                Debug.LogWarning(
+                    $"WORLD MANAGER : Attempted to set block out of bounds at {globalPosition}"
+                );
+            }
             return;
         }
         var blockPos = GetPositionInWorldChunk(globalPosition, skipOffsetAdjust);
 
-        WorldChunks[chunkIndex].SetBlock(blockPos, block);
-        EnqueueMeshGeneration(globalPosition, enqueueNeighbouring: true, highPriority: true);
+        WorldChunks[chunkIndex].SetBlock(blockPos, block, log: log);
 
         if (log && !DisableAllLogs)
         {
@@ -416,7 +433,7 @@ public class WorldManager : UdonSharpBehaviour
             }
 
             // Unbind the renderer
-                freeRenderers[freeRendererCount++] = i;
+            freeRenderers[freeRendererCount++] = i;
             if (_rendererBindings[i] >= 0 && _rendererBindings[i] < WorldChunks.Length)
             {
                 WorldChunks[_rendererBindings[i]].Renderer = null;
@@ -551,19 +568,47 @@ public class WorldManager : UdonSharpBehaviour
 
     private void InitializeStep()
     {
+        bool stepDone = false;
+
         int worldChunksInitEnd = WorldChunks.Length;
         int renderersInitEnd = worldChunksInitEnd + ChunkRenderers.Length;
+        int treeGenerationSteps = _treesToGenerate / GeneratorMaxTreesPerFrame;
+        int treeGenerationEnd = worldChunksInitEnd + ChunkRenderers.Length + treeGenerationSteps;
 
         double timeStart = Time.realtimeSinceStartupAsDouble;
 
+        // Chunk terrain generation
         if (_initStage < worldChunksInitEnd)
         {
-            WorldChunks[_initStage].Init();
+            stepDone = WorldChunks[_initStage].Init();
         }
+
+        // Renderer setup
         else if (_initStage < renderersInitEnd)
         {
             ChunkRenderers[_initStage - worldChunksInitEnd].Init();
+            stepDone = true;
         }
+
+        // Tree generation
+        else if (_initStage < treeGenerationEnd)
+        {
+            int generatedThisFrame = 0;
+            while (_treesLeftToGenerate > 0 && generatedThisFrame < GeneratorMaxTreesPerFrame)
+            {
+                int retries = 4;
+                while (retries-- > 0 && !GenerateTree())
+                { 
+                    Debug.Log("WORLD MANAGER : Tree generation failed, retrying...");
+                }
+                generatedThisFrame++;
+                _treesLeftToGenerate--;
+            }
+
+            stepDone = true;
+        }
+
+        // Finalization
         else
         {
             Debug.Log("WORLD MANAGER : Initialization complete");
@@ -576,10 +621,11 @@ public class WorldManager : UdonSharpBehaviour
         {
             double timeEnd = Time.realtimeSinceStartupAsDouble;
             Debug.Log(
-                $"WORLD MANAGER : Initialization step {_initStage} completed in {(timeEnd - timeStart) * 1000:0.00}ms"
+                $"WORLD MANAGER : Initialization step {_initStage + 1}/{treeGenerationEnd} completed in {(timeEnd - timeStart) * 1000:0.00}ms"
             );
         }
-        _initStage++;
+
+        if (stepDone) _initStage++;
     }
 
     private void UpdateQueues()
@@ -632,5 +678,77 @@ public class WorldManager : UdonSharpBehaviour
                 $"WORLD MANAGER : {count} mesh update(s) processed in {(timeEnd - timeStart) * 1000:0.00}ms"
             );
         }
+    }
+
+    // Returns true if tree was generated, false otherwise
+    private bool GenerateTree()
+    {
+        const int logBlock = 7;
+        const int leafBlock = 8 | 0x2000;
+
+        Vector2Int treePos = new Vector2Int(
+            UnityEngine.Random.Range(0, WorldSizeInChunks * WorldChunk.BlockCountX),
+            UnityEngine.Random.Range(0, WorldSizeInChunks * WorldChunk.BlockCountZ)
+        );
+
+        // Find the ground position
+        int groundY = 63;
+        while (groundY > 0 && GetBlock(new Vector3Int(treePos.x, groundY, treePos.y), true) == 0)
+            groundY--;
+
+        if ((GetBlock(new Vector3Int(treePos.x, groundY, treePos.y), true) & 0xff) == 8)
+        {
+            // Can't grow on leaves
+            return false;
+        }
+
+        int treeY = groundY + 1;
+
+        // Leaves layers 1-2
+        for (int x = -2; x <= 2; x++)
+        {
+            for (int z = -2; z <= 2; z++)
+            {
+                for (int y = 0; y < 2; y++)
+                {
+                    var pos = new Vector3Int(treePos.x + x, treeY + y + 3, treePos.y + z);
+                    SetBlock(pos, leafBlock, skipOffsetAdjust: true, log: false);
+                }
+            }
+        }
+
+        // Leaves layer 3
+        for (int x = -1; x <= 1; x++)
+        {
+            for (int z = -1; z <= 1; z++)
+            {
+                var pos = new Vector3Int(treePos.x + x, treeY + 5, treePos.y + z);
+                SetBlock(pos, leafBlock, skipOffsetAdjust: true, log: false);
+            }
+        }
+
+        // Leaves layer 4
+        {
+            Vector3Int[] pos = new Vector3Int[5];
+            pos[0] = new Vector3Int(treePos.x, treeY + 6, treePos.y);
+            pos[1] = new Vector3Int(treePos.x - 1, treeY + 6, treePos.y);
+            pos[2] = new Vector3Int(treePos.x + 1, treeY + 6, treePos.y);
+            pos[3] = new Vector3Int(treePos.x, treeY + 6, treePos.y - 1);
+            pos[4] = new Vector3Int(treePos.x, treeY + 6, treePos.y + 1);
+
+            for (int i = 0; i < 5; i++)
+            {
+                SetBlock(pos[i], leafBlock, skipOffsetAdjust: true, log: false);
+            }
+        }
+
+        // Trunk
+        for (int y = 0; y < 5; y++)
+        {
+            var pos = new Vector3Int(treePos.x, treeY + y, treePos.y);
+            SetBlock(pos, logBlock, skipOffsetAdjust: true, log: false);
+        }
+
+        return true;
     }
 }

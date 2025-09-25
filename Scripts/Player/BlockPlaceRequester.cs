@@ -43,6 +43,6 @@ public class BlockPlaceRequester : UdonSharpBehaviour
         Debug.Log($"[REQUESTER : {gameObject.name}] Block place request received");
         var pos = new Vector3Int(_blockPlacePosX, _blockPlacePosY, _blockPlacePosZ);
         WorldManager.SetBlock(pos, (ushort)_blockPlaceType);
-        WorldManager.EnqueueMeshGeneration(pos);
+        WorldManager.EnqueueMeshGeneration(pos, enqueueNeighbouring: true, highPriority: true);
     }
 }

@@ -106,7 +106,7 @@ public class PlayerController : UdonSharpBehaviour
 
             if (Input.GetMouseButtonDown(1))
             {
-                PlaceBlockNetworked(hitPos + normal, 0x2000 | 8);
+                PlaceBlockNetworked(hitPos + normal, 3);
                 performedAction = true;
             }
         }
@@ -126,7 +126,7 @@ public class PlayerController : UdonSharpBehaviour
     {
         // Place block locally for immediate feedback
         WorldManager.SetBlock(pos, (ushort)type);
-        WorldManager.EnqueueMeshGeneration(pos);
+        WorldManager.EnqueueMeshGeneration(pos, enqueueNeighbouring: true, highPriority: true);
 
         // Send the request over the network
         BlockPlaceRequester.RequestBlockPlace(pos, type);

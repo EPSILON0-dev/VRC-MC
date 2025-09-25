@@ -1,6 +1,6 @@
 # To Do List
 
-## Basic rendering
+## Rendering
 * `[x]` Chunk bound renderers
 * `[x]` Verbose bound checks EVERYWHERE (in the WM)
 * `[x]` No mesh memory leaks
@@ -9,22 +9,31 @@
 * `[x]` IsNotFull implementation
 * `[ ]` IsGlass implementation
 * `[ ]` In shader AO on block edges
+* `[ ]` Inner leaves darkening
 * `[ ]` Combined chunk renderers
+* `[ ]` World scaling (to around 0.7)
+
 ## Networking implementation
 * `[x]` Chunk modified field
 * `[x]` Setblock networking
 * `[ ]` Modified chunk/subchunk tracking
 * `[ ]` Sync pause
+
 ## Block registry
 * `[x]` Atlas generator
 * `[ ]` By name ID getters
 * `[ ]` Config bits generators/getters
+
 ## World Generation
 * `[x]` Basic perlin noise
 * `[ ]` Tree generation
 * `[ ]` Cave generation
 * `[ ]` Lake generation
+
 ## Basic interface
+
 ## Load screen/area
+
 ## VR Controls
+
 ## Lighting

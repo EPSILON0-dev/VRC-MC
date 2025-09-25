@@ -30,29 +30,69 @@ public class WorldChunk : UdonSharpBehaviour
     // References
     public ChunkRenderer Renderer = null;
 
-    public void Init()
+    // Init state
+    private int _initStep = 0;
+    private bool _initDone = false;
+    public bool InitDone => _initDone;
+
+    public bool Init()
     {
-        // Prepare the blocks storage
-        Blocks = new ushort[SubChunksCount][];
-        BlockCounts = new int[SubChunksCount];
+        int terrainSteps = Manager.GeneratorTimesliceDivision;
+        int textureSteps = Manager.GeneratorTextureTimesliceDivision;
 
-        // For testing, fill with some random blocks
-        GenerateTerrain();
+        // Already initialized
+        if (_initDone) return true;
 
-        // Mark all subchunks as unmodified
-        // Also done in GenerateTerrain, but just in case
-        SubchunkModified = new bool[SubChunksCount];
-        for (int i = 0; i < SubchunkModified.Length; i++)
-            SubchunkModified[i] = false;
-        ChunkModified = false;
+        // Setup (Step 0)
+        if (_initStep == 0)
+        {
+            Blocks = new ushort[SubChunksCount][];
+            BlockCounts = new int[SubChunksCount];
+        }
 
-        // Prepare the block texture
-        ChunkBlockTexture = new Texture2D(TextureSize, TextureSize, TextureFormat.RG16, false, true);
-        ChunkBlockTexture.filterMode = FilterMode.Point;
-        GenerateChunkTexture();
+        // Terrain steps
+        if (_initStep < terrainSteps)
+        {
+            int startXZ = _initStep * (BlockCountX * BlockCountZ) / terrainSteps;
+            int endXZ = (_initStep + 1) * (BlockCountX * BlockCountZ) / terrainSteps;
+            GenerateTerrain(startXZ, endXZ);
+        }
+
+        // Texture steps
+        else if (_initStep < terrainSteps + textureSteps)
+        {
+            if (_initStep == terrainSteps)
+            {
+                ChunkBlockTexture = new Texture2D(TextureSize, TextureSize, TextureFormat.RG16, false, true);
+                ChunkBlockTexture.filterMode = FilterMode.Point;
+            }   
+
+            int step = _initStep - terrainSteps;
+            int startSubchunk = step * SubChunksCount / textureSteps;
+            int endSubchunk = (step + 1) * SubChunksCount / textureSteps;
+            GenerateChunkTexture(startSubchunk, endSubchunk);
+        }
+
+        // Finalization step
+        if (_initStep == terrainSteps + textureSteps - 1)
+        {
+            // Mark all subchunks as unmodified
+            // Also done in GenerateTerrain, but just in case
+            SubchunkModified = new bool[SubChunksCount];
+            for (int i = 0; i < SubchunkModified.Length; i++)
+                SubchunkModified[i] = false;
+            ChunkModified = false;
+
+            // Finalize initialization
+            _initDone = true;
+            return true;
+        }
+
+        _initStep++;
+        return false;
     }
 
-    public void SetBlock(Vector3Int position, ushort block, bool modifyTexture = true)
+    public void SetBlock(Vector3Int position, ushort block, bool modifyTexture = true, bool log = true)
     {
         int subchunkIndex = GetSubChunkIndex(position);
         if (subchunkIndex == -1)
@@ -68,7 +108,7 @@ public class WorldChunk : UdonSharpBehaviour
 
         SetAtIndex(subchunkIndex, blockIndex, block, modifyTexture);
 
-        if (!Manager.DisableAllLogs)
+        if (!Manager.DisableAllLogs && log)
         {
             Debug.Log(
                 $"WORLD CHUNK : {gameObject.name} : " +
@@ -177,7 +217,7 @@ public class WorldChunk : UdonSharpBehaviour
         return Blocks[subchunkIndex][blockIndex];
     }
 
-    public void GenerateChunkTexture()
+    public void GenerateChunkTexture(int startSubchunk = 0, int endSubchunk = SubChunksCount)
     {
         if (Blocks == null)
         {
@@ -191,28 +231,27 @@ public class WorldChunk : UdonSharpBehaviour
         const int blockWidth = 128;
         const int blockHeight = 4;
 
-        // TODO ... time slice ...
         double startTime = Time.realtimeSinceStartupAsDouble;
 
-        for (int index = 0; index < SubChunksCount; index++)
+        for (int subchunk = startSubchunk; subchunk < endSubchunk; subchunk++)
         {
             Color32[] colors = new Color32[SubchunkBlockCount];
-            if (Blocks[index] == null)
+            if (Blocks[subchunk] == null)
             {
                 Array.Clear(colors, 0, SubchunkBlockCount);
-                ChunkBlockTexture.SetPixels32(0, index * blockHeight, blockWidth, blockHeight, colors);
+                ChunkBlockTexture.SetPixels32(0, subchunk * blockHeight, blockWidth, blockHeight, colors);
                 continue;
             }
 
             for (int i = 0; i < SubchunkBlockCount; i++)
             {
                 colors[i] = new Color32(
-                    (byte)(Blocks[index][i] & 0xFF),
-                    (byte)((Blocks[index][i] >> 8) & 0xFF),
+                    (byte)(Blocks[subchunk][i] & 0xFF),
+                    (byte)((Blocks[subchunk][i] >> 8) & 0xFF),
                     0, 0
                 );
             }
-            ChunkBlockTexture.SetPixels32(0, index * blockHeight, blockWidth, blockHeight, colors);
+            ChunkBlockTexture.SetPixels32(0, subchunk * blockHeight, blockWidth, blockHeight, colors);
         }
         ChunkBlockTexture.Apply();
 
@@ -227,7 +266,7 @@ public class WorldChunk : UdonSharpBehaviour
         }
     }
 
-    private void GenerateTerrain()
+    private void GenerateTerrain(int startXZ = 0, int endXZ = BlockCountX * BlockCountZ)
     {
         if (Blocks == null)
         {
@@ -258,7 +297,7 @@ public class WorldChunk : UdonSharpBehaviour
             (int)transform.position.z - Manager.WorldOffsetInBlocks
         );
 
-        for (int xz = 0; xz < BlockCountX * BlockCountZ; xz++)
+        for (int xz = startXZ; xz < endXZ; xz++)
         {
             int chunkX = xz % BlockCountX;
             int chunkZ = xz / BlockCountX;
