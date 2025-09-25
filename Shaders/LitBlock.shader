@@ -12,7 +12,7 @@ Shader "Minecraft/LitBlock"
     }
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
+        Tags { "RenderType"="Cutout" }
         LOD 200
 
         CGPROGRAM
@@ -107,6 +107,10 @@ Shader "Minecraft/LitBlock"
 
             // Apply color tint
             fixed4 c = atlasSample * _Color;
+
+            // Alpha cutout
+            if (c.a < 0.5)
+                discard;
 
             o.Albedo = c.rgb;
             o.Metallic = _Metallic;

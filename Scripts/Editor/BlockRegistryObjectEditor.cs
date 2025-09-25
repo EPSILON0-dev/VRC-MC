@@ -33,7 +33,9 @@ public class BlockRegistryObjectEditor : Editor
             SerializedProperty textureProp = element.FindPropertyRelative("Textures");
 
             string label = string.IsNullOrEmpty(nameProp.stringValue) ?
-                $"Block {idProp.intValue}" : nameProp.stringValue + $" ({idProp.intValue})";
+                $"Block {idProp.intValue}" : nameProp.stringValue +
+                ((idProp.intValue >> 8 != 0) ? $" ({idProp.intValue & 0xff} | 0x{idProp.intValue >> 8:x2})" :
+                $" ({idProp.intValue})");
             GUIContent content = new GUIContent(label);
 
             if (textureProp != null && textureProp.arraySize > 0)
@@ -73,7 +75,10 @@ public class BlockRegistryObjectEditor : Editor
             BlockRegistryObject registry = (BlockRegistryObject)target;
             for (int i = 0; i < registry.Blocks.Length; i++)
             {
-                registry.Blocks[i].ID = i + 1; // Start from 1
+                int id = i + 1; // Start from 1
+                id |= (registry.Blocks[i].IsGlass ? 1 : 0) << 14;
+                id |= (registry.Blocks[i].IsNotFull ? 1 : 0) << 13;
+                registry.Blocks[i].ID = id;
             }
             EditorUtility.SetDirty(registry);
         }

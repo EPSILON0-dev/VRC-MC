@@ -68,6 +68,8 @@ public class ChunkRendererSubchunk : UdonSharpBehaviour
 
     private void GenerateMeshInternal()
     {
+        const ushort isNotFullMask = 0x2000;
+
         if (_meshFilter == null || _meshRenderer == null)
         {
             Debug.LogError($"CHUNK RENDERER SUBCHUNK : {ParentRenderer.gameObject.name} :" +
@@ -118,10 +120,32 @@ public class ChunkRendererSubchunk : UdonSharpBehaviour
             );
             Vector3 blockOffset = blockPos;
 
-            // Front face
-            bool frontVisible = (blockIndex & 56) == 0 ?
-                frontBlocks == null || frontBlocks[blockIndex | 56] == 0 :
-                blocks[blockIndex - 8] == 0;
+            int frontBlock = (blockIndex & 56) == 0 ?
+                (frontBlocks != null ? frontBlocks[blockIndex | 56] : 0) :
+                blocks[blockIndex - 8];
+            int backBlock = (blockIndex & 56) == 56 ?
+                (backBlocks != null ? backBlocks[blockIndex & ~56] : 0) :
+                blocks[blockIndex + 8];
+            int rightBlock = (blockIndex & 7) == 7 ?
+                (rightBlocks != null ? rightBlocks[blockIndex & ~7] : 0) :
+                blocks[blockIndex + 1];
+            int leftBlock = (blockIndex & 7) == 0 ?
+                (leftBlocks != null ? leftBlocks[blockIndex | 7] : 0) :
+                blocks[blockIndex - 1];
+            int topBlock = (blockIndex & 448) == 448 ?
+                (topBlocks != null ? topBlocks[blockIndex & ~448] : 0) :
+                blocks[blockIndex + 64];
+            int bottomBlock = (blockIndex & 448) == 0 ?
+                (bottomBlocks != null ? bottomBlocks[blockIndex | 448] : 0) :
+                blocks[blockIndex - 64];
+
+            bool frontVisible  = frontBlock  == 0 || (frontBlock  & isNotFullMask) != 0;
+            bool backVisible   = backBlock   == 0 || (backBlock   & isNotFullMask) != 0;
+            bool rightVisible  = rightBlock  == 0 || (rightBlock  & isNotFullMask) != 0;
+            bool leftVisible   = leftBlock   == 0 || (leftBlock   & isNotFullMask) != 0;
+            bool topVisible    = topBlock    == 0 || (topBlock    & isNotFullMask) != 0;
+            bool bottomVisible = bottomBlock == 0 || (bottomBlock & isNotFullMask) != 0;
+
             if (frontVisible)
             {
                 vertices[vertexCount++] = new Vector3(0, 0, 0) + blockOffset;
@@ -130,10 +154,6 @@ public class ChunkRendererSubchunk : UdonSharpBehaviour
                 vertices[vertexCount++] = new Vector3(0, 1, 0) + blockOffset;
             }
 
-            // Back face
-            bool backVisible = (blockIndex & 56) == 56 ?
-                backBlocks == null || backBlocks[blockIndex & ~56] == 0 :
-                blocks[blockIndex + 8] == 0;
             if (backVisible)
             {
                 vertices[vertexCount++] = new Vector3(1, 0, 1) + blockOffset;
@@ -142,10 +162,6 @@ public class ChunkRendererSubchunk : UdonSharpBehaviour
                 vertices[vertexCount++] = new Vector3(1, 1, 1) + blockOffset;
             }
 
-            // Right face
-            bool rightVisible = (blockIndex & 7) == 7 ?
-                rightBlocks == null || rightBlocks[blockIndex & ~7] == 0 :
-                blocks[blockIndex + 1] == 0;
             if (rightVisible)
             {
                 vertices[vertexCount++] = new Vector3(1, 0, 0) + blockOffset;
@@ -154,10 +170,6 @@ public class ChunkRendererSubchunk : UdonSharpBehaviour
                 vertices[vertexCount++] = new Vector3(1, 1, 0) + blockOffset;
             }
 
-            // Left face
-            bool leftVisible = (blockIndex & 7) == 0 ?
-                leftBlocks == null || leftBlocks[blockIndex | 7] == 0 :
-                blocks[blockIndex - 1] == 0;
             if (leftVisible)
             {
                 vertices[vertexCount++] = new Vector3(0, 0, 1) + blockOffset;
@@ -166,10 +178,6 @@ public class ChunkRendererSubchunk : UdonSharpBehaviour
                 vertices[vertexCount++] = new Vector3(0, 1, 1) + blockOffset;
             }
 
-            // Top face
-            bool topVisible = (blockIndex & 448) == 448 ?
-                topBlocks == null || topBlocks[blockIndex & ~448] == 0 :
-                blocks[blockIndex + 64] == 0;
             if (topVisible)
             {
                 vertices[vertexCount++] = new Vector3(0, 1, 0) + blockOffset;
@@ -178,10 +186,6 @@ public class ChunkRendererSubchunk : UdonSharpBehaviour
                 vertices[vertexCount++] = new Vector3(0, 1, 1) + blockOffset;
             }
 
-            // Bottom face
-            bool bottomVisible = (blockIndex & 448) == 0 ?
-                bottomBlocks == null || bottomBlocks[blockIndex | 448] == 0 :
-                blocks[blockIndex - 64] == 0;
             if (bottomVisible)
             {
                 vertices[vertexCount++] = new Vector3(0, 0, 1) + blockOffset;

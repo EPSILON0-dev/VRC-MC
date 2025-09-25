@@ -73,7 +73,7 @@ MonoBehaviour:
     IsNotFull: 0
     IsGlass: 0
   - BlockName: Oak Leaves
-    ID: 8
+    ID: 8200
     Textures:
     - {fileID: 2800000, guid: 5b785850b9dbd754b86cac9aa0cd810b, type: 3}
     HasMultipleTextures: 0

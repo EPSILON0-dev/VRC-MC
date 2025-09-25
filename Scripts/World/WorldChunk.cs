@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Numerics;
 using UdonSharp;
 using UnityEngine;
 
@@ -46,7 +47,7 @@ public class WorldChunk : UdonSharpBehaviour
         ChunkModified = false;
 
         // Prepare the block texture
-        ChunkBlockTexture = new Texture2D(TextureSize, TextureSize, TextureFormat.R8, false, true);
+        ChunkBlockTexture = new Texture2D(TextureSize, TextureSize, TextureFormat.RG16, false, true);
         ChunkBlockTexture.filterMode = FilterMode.Point;
         GenerateChunkTexture();
     }
@@ -137,7 +138,11 @@ public class WorldChunk : UdonSharpBehaviour
             // Don't set air blocks in the texture to avoid flickering
             if (block != 0)
             {
-                var color = new Color32((byte)block, 0, 0, 0);
+                var color = new Color32(
+                    (byte)(block & 0xff),         // Block ID
+                    (byte)((block >> 8) & 0xff),  // Block Attributes
+                    0, 0
+                );
                 ChunkBlockTexture.SetPixel(x, y, color);
             }
             ChunkBlockTexture.Apply();
@@ -192,13 +197,19 @@ public class WorldChunk : UdonSharpBehaviour
         for (int index = 0; index < SubChunksCount; index++)
         {
             Color32[] colors = new Color32[SubchunkBlockCount];
-            if (Blocks[index] == null) continue;
+            if (Blocks[index] == null)
+            {
+                Array.Clear(colors, 0, SubchunkBlockCount);
+                ChunkBlockTexture.SetPixels32(0, index * blockHeight, blockWidth, blockHeight, colors);
+                continue;
+            }
+
             for (int i = 0; i < SubchunkBlockCount; i++)
             {
-                // Only 16 for now
                 colors[i] = new Color32(
                     (byte)(Blocks[index][i] & 0xFF),
-                    0, 0, 0
+                    (byte)((Blocks[index][i] >> 8) & 0xFF),
+                    0, 0
                 );
             }
             ChunkBlockTexture.SetPixels32(0, index * blockHeight, blockWidth, blockHeight, colors);
@@ -228,31 +239,76 @@ public class WorldChunk : UdonSharpBehaviour
         }
 
         // TODO some manager for the block...
-        const int stone = 3;
-        const int dirt = 2;
+        const int bedrock = 1;
+        const int stone = 2;
+        const int dirt = 5;
+        const int grass = 6;
 
+        // Generate 2 layer perlin noise terrain
+        const float perlinFrequency1 = 1f / 128f;
+        const float perlinFrequency2 = 1f / 32f;
+        const float perlinScale1 = 7f;
+        const float perlinScale2 = 2.5f;
+        const float baseHeight = 32f;
+            
         double startTime = Time.realtimeSinceStartupAsDouble;
 
-        // Simple generator -- Stone up to y=32, dirt up to y=40
-        for (int i = 0; i < SubChunksCount; i++)
+        Vector2Int chunkOrigin = new Vector2Int(
+            (int)transform.position.x - Manager.WorldOffsetInBlocks,
+            (int)transform.position.z - Manager.WorldOffsetInBlocks
+        );
+
+        for (int xz = 0; xz < BlockCountX * BlockCountZ; xz++)
         {
-            // As a test fill with ones
-            Blocks[i] = new ushort[SubchunkBlockCount];
-            for (int j = 0; j < SubchunkBlockCount; j++)
+            int chunkX = xz % BlockCountX;
+            int chunkZ = xz / BlockCountX;
+
+            float perlinX = chunkOrigin.x + chunkX + Manager.GeneratorOffset.x;
+            float perlinY = chunkOrigin.y + chunkZ + Manager.GeneratorOffset.y;
+
+            float perlin1 = (Mathf.PerlinNoise(
+                perlinX * perlinFrequency1,
+                perlinY * perlinFrequency1
+            ) * 2f - 1f) * perlinScale1;
+
+            float perlin2 = (Mathf.PerlinNoise(
+                perlinX * perlinFrequency2,
+                perlinY * perlinFrequency2
+            ) * 2f - 1f) * perlinScale2;
+
+            // Hope we don't overshoot
+            float height = baseHeight + perlin1 * perlin2;
+
+            // Fill blocks up to height
+            for (int y = 0; y <= (int)height; y++)
             {
-                // Ah yes... magic numbers, they'll be gone soon
-                if (i < 16)
+                int subchunkIndex = GetSubChunkIndex(new Vector3Int(chunkX, y, chunkZ));
+                int blockIndex = GetBlockIndex(new Vector3Int(chunkX, y, chunkZ));
+
+                if (subchunkIndex == -1 || blockIndex == -1)
                 {
-                    Blocks[i][j] = stone;
+                    Debug.LogError(
+                        $"WORLD CHUNK : {gameObject.name} : " +
+                        $"Calculated out of bounds subchunk or block index at " +
+                        $"{new Vector3Int(chunkX, y, chunkZ)}"
+                    );
+                    continue;
                 }
-                else if (i < 20)
+
+                if (Blocks[subchunkIndex] == null)
                 {
-                    Blocks[i][j] = dirt;
+                    Blocks[subchunkIndex] = new ushort[SubchunkBlockCount];
+                    Array.Clear(Blocks[subchunkIndex], 0, SubchunkBlockCount);
+                    BlockCounts[subchunkIndex] = 0;
                 }
-                else
-                {
-                    Blocks[i][j] = 0;
-                }
+
+                ushort blockType = stone;
+                if (y == 0) blockType = bedrock;
+                else if (y == (int)height && height > 3f) blockType = grass;
+                else if (y >= (int)height - 3) blockType = dirt;
+
+                Blocks[subchunkIndex][blockIndex] = blockType;
+                BlockCounts[subchunkIndex]++;
             }
         }
 

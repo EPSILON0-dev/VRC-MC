@@ -16,6 +16,8 @@ public class WorldManager : UdonSharpBehaviour
     public int RenderRegionSizeInChunks = 1;
     public int MeshGenerationsPerFrame = 1;
     public double TimeBetweenChunkShifts = 2f;
+    public Vector2Int GeneratorOffset = Vector2Int.zero;
+    public float GeneratorTreesPerChunk = 1.5f;
     public bool DisableSpamLogs = false;
     public bool DisableAllLogs = false;
 
@@ -149,7 +151,7 @@ public class WorldManager : UdonSharpBehaviour
         var blockPos = GetPositionInWorldChunk(globalPosition, skipOffsetAdjust);
 
         WorldChunks[chunkIndex].SetBlock(blockPos, block);
-        EnqueueMeshGeneration(globalPosition, enqueueNeighbouring: true);
+        EnqueueMeshGeneration(globalPosition, enqueueNeighbouring: true, highPriority: true);
 
         if (log && !DisableAllLogs)
         {
@@ -162,7 +164,7 @@ public class WorldManager : UdonSharpBehaviour
 
     // ----------------------------------------------------------------------
 
-    public void EnqueueMeshGeneration(Vector3Int globalPosition, bool enqueueNeighbouring = false)
+    public void EnqueueMeshGeneration(Vector3Int globalPosition, bool enqueueNeighbouring = false, bool highPriority = false)
     {
         int chunkIndex = GetWorldChunkIndex(globalPosition);
         if (chunkIndex < 0 || chunkIndex >= WorldChunks.Length)
@@ -177,10 +179,20 @@ public class WorldManager : UdonSharpBehaviour
         Vector3Int chunkPos = localPosition / ChunkRendererSubchunk.Size;
         int subchunkIndex = chunkPos.x + chunkPos.z * 2 + chunkPos.y * 4;
 
-        Vector2Int[] newQueue = new Vector2Int[_generateQueue.Length + 1];
-        newQueue[0] = new Vector2Int(chunkIndex, subchunkIndex);
-        Array.Copy(_generateQueue, 0, newQueue, 1, _generateQueue.Length);
-        _generateQueue = newQueue;
+        if (highPriority)
+        {
+            Vector2Int[] newQueue = new Vector2Int[_generateQueue.Length + 1];
+            newQueue[_generateQueue.Length] = new Vector2Int(chunkIndex, subchunkIndex);
+            Array.Copy(_generateQueue, 0, newQueue, 0, _generateQueue.Length);
+            _generateQueue = newQueue;
+        }
+        else
+        {
+            Vector2Int[] newQueue = new Vector2Int[_generateQueue.Length + 1];
+            newQueue[0] = new Vector2Int(chunkIndex, subchunkIndex);
+            Array.Copy(_generateQueue, 0, newQueue, 1, _generateQueue.Length);
+            _generateQueue = newQueue;
+        }
 
         if (!DisableSpamLogs)
         {
@@ -204,34 +216,34 @@ public class WorldManager : UdonSharpBehaviour
 
             if (subchunkPos.x == 0)
             {
-                EnqueueMeshGeneration(globalPosCopy + new Vector3Int(-1, 0, 0));
+                EnqueueMeshGeneration(globalPosCopy + new Vector3Int(-1, 0, 0), highPriority: highPriority);
                 enqueuedCount++;
             }
             else if (subchunkPos.x == ChunkRendererSubchunk.Size - 1)
             {
-                EnqueueMeshGeneration(globalPosCopy + new Vector3Int(1, 0, 0));
+                EnqueueMeshGeneration(globalPosCopy + new Vector3Int(1, 0, 0), highPriority: highPriority);
                 enqueuedCount++;
             }
 
             if (subchunkPos.y == 0)
             {
-                EnqueueMeshGeneration(globalPosCopy + new Vector3Int(0, -1, 0));
+                EnqueueMeshGeneration(globalPosCopy + new Vector3Int(0, -1, 0), highPriority: highPriority);
                 enqueuedCount++;
             }
             else if (subchunkPos.y == ChunkRendererSubchunk.Size - 1)
             {
-                EnqueueMeshGeneration(globalPosCopy + new Vector3Int(0, 1, 0));
+                EnqueueMeshGeneration(globalPosCopy + new Vector3Int(0, 1, 0), highPriority: highPriority);
                 enqueuedCount++;
             }
 
             if (subchunkPos.z == 0)
             {
-                EnqueueMeshGeneration(globalPosCopy + new Vector3Int(0, 0, -1));
+                EnqueueMeshGeneration(globalPosCopy + new Vector3Int(0, 0, -1), highPriority: highPriority);
                 enqueuedCount++;
             }
             else if (subchunkPos.z == ChunkRendererSubchunk.Size - 1)
             {
-                EnqueueMeshGeneration(globalPosCopy + new Vector3Int(0, 0, 1));
+                EnqueueMeshGeneration(globalPosCopy + new Vector3Int(0, 0, 1), highPriority: highPriority);
                 enqueuedCount++;
             }
 
